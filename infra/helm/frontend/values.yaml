@@ -25,6 +25,8 @@ resources:
     memory: "256Mi"
 
 persistence:
+  enabled: false
   mountPath: /var/log
   accessMode: ReadWriteOnce
   size: 1Gi
+  storageClass: ""

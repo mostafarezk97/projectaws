@@ -6,6 +6,6 @@ ingress:
   host: eks-project.com
 
 persistence:
+  enabled: false
   accessMode: ReadWriteOnce
   size: 5Gi
-  storageClass: gp2

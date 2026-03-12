@@ -21,10 +21,14 @@ spec:
             - containerPort: {{ .Values.containerPort }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+{{- if .Values.persistence.enabled }}
           volumeMounts:
             - name: logs
               mountPath: {{ .Values.persistence.mountPath }}
+{{- end }}
+{{- if .Values.persistence.enabled }}
       volumes:
         - name: logs
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-frontend-pvc
+{{- end }}

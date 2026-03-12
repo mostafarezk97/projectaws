@@ -4,3 +4,6 @@ ingress:
   host: eks-project.com
 
 namespace: eks-project-production
+
+persistence:
+  enabled: false
