@@ -138,6 +138,10 @@ jobs:
         if: failure()
         run: |
           kubectl get all,ingress,pvc -n ${{ env.NAMESPACE }} || true
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide || true
+          kubectl describe deployment frontend-frontend -n ${{ env.NAMESPACE }} || true
+          kubectl describe pods -n ${{ env.NAMESPACE }} -l app=frontend-frontend || true
+          kubectl logs -n ${{ env.NAMESPACE }} -l app=frontend-frontend --tail=200 || true
           kubectl get events -n ${{ env.NAMESPACE }} --sort-by=.metadata.creationTimestamp || true
           helm status backend -n ${{ env.NAMESPACE }} || true
           helm status frontend -n ${{ env.NAMESPACE }} || true
@@ -265,6 +269,10 @@ jobs:
         if: failure()
         run: |
           kubectl get all,ingress,pvc -n ${{ env.NAMESPACE }} || true
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide || true
+          kubectl describe deployment frontend-frontend -n ${{ env.NAMESPACE }} || true
+          kubectl describe pods -n ${{ env.NAMESPACE }} -l app=frontend-frontend || true
+          kubectl logs -n ${{ env.NAMESPACE }} -l app=frontend-frontend --tail=200 || true
           kubectl get events -n ${{ env.NAMESPACE }} --sort-by=.metadata.creationTimestamp || true
           helm status backend -n ${{ env.NAMESPACE }} || true
           helm status frontend -n ${{ env.NAMESPACE }} || true
