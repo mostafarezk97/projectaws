@@ -1,6 +1,11 @@
-replicaCount: 3
+replicaCount: 1
+
+namespace: eks-project-production
 
 ingress:
   host: eks-project.com
 
-namespace: eks-project-production
+persistence:
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  storageClass: gp2
