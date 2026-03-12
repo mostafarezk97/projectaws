@@ -25,21 +25,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Publish backend
-        working-directory: ./DotNet-Backend
-        run: |
-          dotnet publish API.csproj -c Release -o ./publish --nologo
-
-      - name: Verify backend publish output
-        working-directory: ./DotNet-Backend
-        run: |
-          test -f ./publish/API.dll
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -162,21 +147,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Publish backend
-        working-directory: ./DotNet-Backend
-        run: |
-          dotnet publish API.csproj -c Release -o ./publish --nologo
-
-      - name: Verify backend publish output
-        working-directory: ./DotNet-Backend
-        run: |
-          test -f ./publish/API.dll
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
