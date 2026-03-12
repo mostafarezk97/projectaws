@@ -1,12 +1,15 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
+COPY . .
+
+RUN dotnet restore
+RUN dotnet publish -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# Copy published output from CI pipeline
-COPY publish/ .
+COPY --from=build /app/publish .
 
-# Expose API port
-EXPOSE 8080
-
-# Start the API
-ENTRYPOINT ["dotnet", "API.dll"]
+EXPOSE 80
+ENTRYPOINT ["dotnet", "DotNet-Backend.dll"]
