@@ -1,0 +1,30 @@
+replicaCount: 1
+
+image:
+  repository: 116533675020.dkr.ecr.eu-central-1.amazonaws.com/frontend
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+containerPort: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+  path: /
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "300m"
+    memory: "256Mi"
+
+persistence:
+  mountPath: /var/log
+  accessMode: ReadWriteOnce
+  size: 1Gi

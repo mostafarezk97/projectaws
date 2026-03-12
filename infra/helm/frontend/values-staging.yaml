@@ -1,0 +1,6 @@
+replicaCount: 1
+
+ingress:
+  host: stg.eks-project.com
+
+namespace: eks-project-staging

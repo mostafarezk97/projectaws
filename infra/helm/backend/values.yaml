@@ -1,0 +1,33 @@
+replicaCount: 1
+
+image:
+  repository: 116533675020.dkr.ecr.eu-central-1.amazonaws.com/backend
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+containerPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+  path: /api
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+persistence:
+  mountPath: /var/log
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+secret:
+  name: backend-secret
