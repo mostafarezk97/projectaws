@@ -25,6 +25,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish backend
+        working-directory: ./DotNet-Backend
+        run: |
+          dotnet publish API.csproj -c Release -o ./publish --nologo
+
+      - name: Verify backend publish output
+        working-directory: ./DotNet-Backend
+        run: |
+          test -f ./publish/API.dll
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: ./React-Frontend/package-lock.json
+
+      - name: Build frontend assets
+        working-directory: ./React-Frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify frontend build output
+        working-directory: ./React-Frontend
+        run: |
+          test -f ./dist/index.html
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -38,19 +71,19 @@ jobs:
 
       - name: Build backend image
         run: |
-          docker build -t ${{ vars.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }} ./DotNet-Backend
+          docker build -f ./DotNet-Backend/Dockerfile -t ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }} ./DotNet-Backend
 
       - name: Push backend image
         run: |
-          docker push ${{ vars.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
 
       - name: Build frontend image
         run: |
-          docker build -t ${{ vars.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }} ./React-Frontend
+          docker build -f ./React-Frontend/Dockerfile -t ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }} ./React-Frontend
 
       - name: Push frontend image
         run: |
-          docker push ${{ vars.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -61,6 +94,11 @@ jobs:
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ vars.EKS_CLUSTER_NAME }}
+
+      - name: Verify cluster access
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
 
       - name: Create namespace
         run: |
@@ -82,18 +120,34 @@ jobs:
       - name: Deploy backend with Helm
         run: |
           helm upgrade --install backend ./infra/helm/backend \
+            --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/backend/values-staging.yaml \
-            --set image.repository=${{ vars.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }} \
+            --wait \
+            --timeout 5m \
+            --debug \
+            --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }} \
             --set image.tag=${{ github.sha }}
 
       - name: Deploy frontend with Helm
         run: |
           helm upgrade --install frontend ./infra/helm/frontend \
+            --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/frontend/values-staging.yaml \
-            --set image.repository=${{ vars.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }} \
+            --wait \
+            --timeout 5m \
+            --debug \
+            --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }} \
             --set image.tag=${{ github.sha }}
+
+      - name: Collect staging diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get all,ingress,pvc -n ${{ env.NAMESPACE }} || true
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by=.metadata.creationTimestamp || true
+          helm status backend -n ${{ env.NAMESPACE }} || true
+          helm status frontend -n ${{ env.NAMESPACE }} || true
 
   deploy-production:
     name: Deploy to Production
@@ -109,6 +163,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish backend
+        working-directory: ./DotNet-Backend
+        run: |
+          dotnet publish API.csproj -c Release -o ./publish --nologo
+
+      - name: Verify backend publish output
+        working-directory: ./DotNet-Backend
+        run: |
+          test -f ./publish/API.dll
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: ./React-Frontend/package-lock.json
+
+      - name: Build frontend assets
+        working-directory: ./React-Frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify frontend build output
+        working-directory: ./React-Frontend
+        run: |
+          test -f ./dist/index.html
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -122,19 +209,19 @@ jobs:
 
       - name: Build backend image
         run: |
-          docker build -t ${{ vars.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }} ./DotNet-Backend
+          docker build -f ./DotNet-Backend/Dockerfile -t ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }} ./DotNet-Backend
 
       - name: Push backend image
         run: |
-          docker push ${{ vars.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
 
       - name: Build frontend image
         run: |
-          docker build -t ${{ vars.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }} ./React-Frontend
+          docker build -f ./React-Frontend/Dockerfile -t ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }} ./React-Frontend
 
       - name: Push frontend image
         run: |
-          docker push ${{ vars.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -145,6 +232,11 @@ jobs:
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ vars.EKS_CLUSTER_NAME }}
+
+      - name: Verify cluster access
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
 
       - name: Create namespace
         run: |
@@ -166,15 +258,31 @@ jobs:
       - name: Deploy backend with Helm
         run: |
           helm upgrade --install backend ./infra/helm/backend \
+            --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/backend/values-production.yaml \
-            --set image.repository=${{ vars.ECR_REGISTRY }}/${{ env.BACKEND_REPOSITORY }} \
+            --wait \
+            --timeout 5m \
+            --debug \
+            --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }} \
             --set image.tag=${{ github.sha }}
 
       - name: Deploy frontend with Helm
         run: |
           helm upgrade --install frontend ./infra/helm/frontend \
+            --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/frontend/values-production.yaml \
-            --set image.repository=${{ vars.ECR_REGISTRY }}/${{ env.FRONTEND_REPOSITORY }} \
+            --wait \
+            --timeout 5m \
+            --debug \
+            --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }} \
             --set image.tag=${{ github.sha }}
+
+      - name: Collect production diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get all,ingress,pvc -n ${{ env.NAMESPACE }} || true
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by=.metadata.creationTimestamp || true
+          helm status backend -n ${{ env.NAMESPACE }} || true
+          helm status frontend -n ${{ env.NAMESPACE }} || true
