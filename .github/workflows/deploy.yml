@@ -112,6 +112,8 @@ jobs:
             --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/backend/values-staging.yaml \
+            --atomic \
+            --cleanup-on-fail \
             --wait \
             --timeout 5m \
             --debug \
@@ -124,6 +126,8 @@ jobs:
             --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/frontend/values-staging.yaml \
+            --atomic \
+            --cleanup-on-fail \
             --wait \
             --timeout 5m \
             --debug \
@@ -235,6 +239,8 @@ jobs:
             --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/backend/values-production.yaml \
+            --atomic \
+            --cleanup-on-fail \
             --wait \
             --timeout 5m \
             --debug \
@@ -247,6 +253,8 @@ jobs:
             --create-namespace \
             --namespace ${{ env.NAMESPACE }} \
             -f ./infra/helm/frontend/values-production.yaml \
+            --atomic \
+            --cleanup-on-fail \
             --wait \
             --timeout 5m \
             --debug \
